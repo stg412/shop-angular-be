@@ -67,6 +67,15 @@ functions:
     environment:
       PRODUCTS_TABLE: "products"
       STOCKS_TABLE: "stockDataTable"
+  createProduct:
+    handler: handler.createProduct # Specify the handler for the new function
+    environment:
+      PRODUCTS_TABLE: "products"
+    events:
+      - http:
+          path: products
+          method: post # Configure the HTTP POST method for the new function
+          cors: true
   # hello:
   #   handler: handler.hello
 #    The following are a few example events you can configure

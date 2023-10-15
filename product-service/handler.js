@@ -122,6 +122,31 @@ module.exports.getProductsById = async (event) => {
   }
 };
 
+// CREATE PRODUCT
+
+module.exports.createProduct = async (event) => {
+  try {
+    const requestBody = JSON.parse(event.body);
+
+    const params = {
+      TableName: process.env.PRODUCTS_TABLE, 
+      Item: requestBody,
+    };
+
+    await dynamo.put(params).promise();
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Product created successfully' }),
+    };
+  } catch (error) {
+    console.error('Error:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: 'Internal Server Error' }),
+    };
+  }
+};
 
 // OPTION WITH MOCKED DATA - WORKING!!!
 
