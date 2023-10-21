@@ -1,16 +1,3 @@
-# Welcome to Serverless!
-#
-# This file is the main config file for your service.
-# It's very minimal at this point and uses default values.
-# You can always add more config options for more control.
-# We've included some commented out config examples here.
-# Just uncomment any of them to get that config option.
-#
-# For full config options, check the docs:
-#    docs.serverless.com
-#
-# Happy Coding!
-
 service: product-service
 # app and org for use with dashboard.serverless.com
 #app: your-app-name
@@ -22,7 +9,7 @@ frameworkVersion: "3"
 
 provider:
   name: aws
-  runtime: nodejs18.x
+  runtime: nodejs14.x
   region: us-east-1
 
 # you can overwrite defaults here
@@ -62,6 +49,9 @@ provider:
 functions:
   getProductsList:
     handler: handler.getProductsList
+    environment:
+      PRODUCTS_TABLE: "products"
+      STOCKS_TABLE: "stockDataTable"
     events:
       - http:
           path: products
@@ -73,6 +63,18 @@ functions:
       - http:
           path: products/{productId}
           method: get
+          cors: true
+    environment:
+      PRODUCTS_TABLE: "products"
+      STOCKS_TABLE: "stockDataTable"
+  createProduct:
+    handler: handler.createProduct # Specify the handler for the new function
+    environment:
+      PRODUCTS_TABLE: "products"
+    events:
+      - http:
+          path: products
+          method: post # Configure the HTTP POST method for the new function
           cors: true
   # hello:
   #   handler: handler.hello
@@ -117,12 +119,9 @@ functions:
 #      variable2: value2
 
 # you can add CloudFormation resource templates here
-#resources:
-#  Resources:
-#    NewResource:
-#      Type: AWS::S3::Bucket
-#      Properties:
-#        BucketName: my-new-bucket
+# resources:
+#   Resources:
+
 #  Outputs:
 #     NewOutput:
 #       Description: "Description for the output"
