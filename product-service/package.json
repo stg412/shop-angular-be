@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/stg412/shop-angular-be/issues"
   },
-  "homepage": "https://github.com/stg412/shop-angular-be#readme"
+  "homepage": "https://github.com/stg412/shop-angular-be#readme",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.428.0",
+    "@aws-sdk/util-dynamodb": "^3.428.0"
+  }
 }
