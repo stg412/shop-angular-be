@@ -2,35 +2,103 @@ const AWS = require("aws-sdk");
 const s3 = new AWS.S3()
 const csv = require("csv-parser");
 
-module.exports.importFileParser = async (event)=>  {
+const sqs = new AWS.SQS();
+const SQS_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/948204824271/catalogItemsQueue"; // Replace with your SQS queue URL
+
+module.exports.importFileParser = async (event) => {
+console.log('event!!!!!!!!!!!!!!!!!!!! :', event);
   try {
-      const params = {
-          Bucket: event.Records[0].s3.bucket.name,
-          Key: event.Records[0].s3.object.key,
-      };
+    const params = {
+      Bucket: event.Records[0].s3.bucket.name,
+      Key: event.Records[0].s3.object.key,
+    };
 
-      await new Promise((resolve, reject) => {
-          s3.getObject(params)
-              .createReadStream()
-              .pipe(csv())
-              .on('data', data => {
-                  console.info('CSV file row data:', data);
-              })
-              .on('error', error => {
-                  reject(error.message);
-              })
-              .on('end', () => {
-                  resolve('success');
-              })
-      });
+    const records = [];
 
+    await new Promise((resolve, reject) => {
+      s3.getObject(params)
+        .createReadStream()
+        .pipe(csv())
+        .on("data", (data) => {
+          records.push(data);
+        })
+        .on("error", (error) => {
+          reject(error.message);
+        })
+        .on("end", async () => {
+          for (const record of records) {
+            await sendRecordToSQS(record);
+          }
+          resolve("success");
+        });
+    });
   } catch (error) {
-      console.log(error.message);
+    console.log(error.message);
   }
-}
+};
+
+// Function to send a record to SQS
+const sendRecordToSQS = async (record) => {
+  const params = {
+    MessageBody: JSON.stringify(record), // Convert the record to JSON
+    QueueUrl: SQS_QUEUE_URL,
+  };
+
+  await sqs.sendMessage(params).promise();
+};
+
+// CLOUDWATCH readable stream logging handler
+// module.exports.importFileParser = async (event)=>  {
+//   try {
+//       const params = {
+//           Bucket: event.Records[0].s3.bucket.name,
+//           Key: event.Records[0].s3.object.key,
+//       };
+
+//       await new Promise((resolve, reject) => {
+//           s3.getObject(params)
+//               .createReadStream()
+//               .pipe(csv())
+//               .on('data', data => {
+//                   console.info('CSV file row data:', data);
+//               })
+//               .on('error', error => {
+//                   reject(error.message);
+//               })
+//               .on('end', () => {
+//                   resolve('success');
+//               })
+//       });
+
+//   } catch (error) {
+//       console.log(error.message);
+//   }
+// }
+
+// this endpoint make signedURL to process the UPLOAD functionality on UI
+module.exports.importProductsFile = async (event) => {
+  const { name } = event.queryStringParameters;
+
+  // Generate a Signed URL for the S3 object
+  const signedUrl = await s3.getSignedUrlPromise("putObject", {
+    Bucket: "module-5-upload-s3",
+    Key: `uploaded/${name}`,
+    Expires: 60, // URL expiration time in seconds
+  });
+
+  return {
+    statusCode: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Credentials": true,
+    },
+    body: JSON.stringify({ url: signedUrl }),
+  };
+};
+
 
 // module.exports.importFileParser = async (event) => {
-//   const bucketName = "module-5-upload-s3"; // Change this to your S3 bucket name
+//   const bucketName = "module-5-upload-s3";
 
 //   for (const record of event.Records) {
 //     const params = {
@@ -77,23 +145,3 @@ module.exports.importFileParser = async (event)=>  {
 //         });
 //     }
 // };
-
-module.exports.importProductsFile = async (event) => {
-  const { name } = event.queryStringParameters;
-
-  // Generate a Signed URL for the S3 object
-  const signedUrl = await s3.getSignedUrlPromise("putObject", {
-    Bucket: "module-5-upload-s3",
-    Key: `uploaded/${name}`,
-    Expires: 60, // URL expiration time in seconds
-  });
-
-  return {
-    statusCode: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Credentials": true,
-    },
-    body: JSON.stringify({ url: signedUrl }),
-  };
-};
