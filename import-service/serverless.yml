@@ -21,6 +21,11 @@ provider:
             - "s3:*"
           Resource:
             - "arn:aws:s3:::module-5-upload-s3/*"
+        - Effect: "Allow"
+          Action:
+            - "sqs:SendMessage"  # Allow sending messages to an SQS queue
+          Resource:
+            - "arn:aws:sqs:us-east-1:948204824271:catalogItemsQueue"
 
 
 functions:
