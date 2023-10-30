@@ -14,7 +14,7 @@ module.exports.importFileParser = async (event)=>  {
               .createReadStream()
               .pipe(csv())
               .on('data', data => {
-                  console.info('CSV file row data:', data);
+                  console.info('CSV file data:', data);
               })
               .on('error', error => {
                   reject(error.message);
