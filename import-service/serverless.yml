@@ -21,6 +21,12 @@ provider:
             - "s3:*"
           Resource:
             - "arn:aws:s3:::upload-s3-module-5/*"
+        - Effect: "Allow"
+          Action:
+            - "sqs:*"
+          Resource:
+            - "arn:aws:sqs:us-east-1:948204824271:catalogItemsQueue"
+        
 
 functions:
   importProductsFile:
