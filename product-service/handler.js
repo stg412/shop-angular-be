@@ -2,7 +2,7 @@ const AWS = require('aws-sdk');
 const dynamo = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 const PRODUCTS_TABLE = process.env.PRODUCTS_TABLE;
-// const SNS_TOPIC_ARN = "arn:aws:sns:us-east-1:948204824271:createProductTopic";
+const SNS_TOPIC_ARN = "arn:aws:sns:us-east-1:948204824271:createProductTopic";
 
 const scan = async (tableName) => {
   const scanResults = await dynamo.scan({
@@ -176,8 +176,8 @@ module.exports.catalogBatchProcess = async (event) => {
     }
 
     // Send an event to the SNS topic
-    // const snsMessage = "Products have been created successfully.";
-    // await sendEventToSNS(SNS_TOPIC_ARN, snsMessage);
+    const snsMessage = "Products have been created successfully.";
+    await sendEventToSNS(SNS_TOPIC_ARN, snsMessage);
 
     return {
       statusCode: 200,
@@ -211,14 +211,14 @@ const generateProductId = () => {
 };
 
 // Function to send an event to an SNS topic
-// const sendEventToSNS = async (topicArn, message) => {
-//   const params = {
-//     TopicArn: topicArn,
-//     Message: message,
-//   };
+const sendEventToSNS = async (topicArn, message) => {
+  const params = {
+    TopicArn: topicArn,
+    Message: message,
+  };
 
-//   await sns.publish(params).promise();
-// };
+  await sns.publish(params).promise();
+};
 
 // OPTION WITH MOCKED DATA - WORKING!!!
 

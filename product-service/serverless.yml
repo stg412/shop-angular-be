@@ -11,6 +11,15 @@ provider:
   name: aws
   runtime: nodejs14.x
   region: us-east-1
+  
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "sns:*"
+          Resource:
+            - "arn:aws:sns:us-east-1:948204824271:createProductTopic"
 
 # you can add statements to the Lambda function's IAM Role here
 #  iam:
@@ -84,7 +93,18 @@ resources:
       Type: AWS::SQS::Queue
       Properties:
         QueueName: catalogItemsQueue
-
+    CreateProductTopic: # Define the SNS topic
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: "Create Product Topic"
+        TopicName: "createProductTopic"
+    CreateProductEmailSubscription: # Define an email subscription for the SNS topic
+      Type: AWS::SNS::Subscription
+      Properties:
+        Endpoint: "pachecoduke139@gmail.com"
+        Protocol: "email"
+        TopicArn:
+          Ref: CreateProductTopic
 
 #  Outputs:
 #     NewOutput:
