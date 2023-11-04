@@ -1,5 +1,8 @@
 const AWS = require('aws-sdk');
 const dynamo = new AWS.DynamoDB.DocumentClient();
+const sns = new AWS.SNS();
+const PRODUCTS_TABLE = process.env.PRODUCTS_TABLE;
+const SNS_TOPIC_ARN = "arn:aws:sns:us-east-1:948204824271:createProductTopic";
 
 const scan = async (tableName) => {
   const scanResults = await dynamo.scan({
@@ -146,6 +149,75 @@ module.exports.createProduct = async (event) => {
       body: JSON.stringify({ message: 'Internal Server Error' }),
     };
   }
+};
+
+
+module.exports.catalogBatchProcess = async (event) => {
+  try {
+    const records = event.Records;
+
+    for (const record of records) {
+      const messageBody = JSON.parse(record.body);
+
+      if (!messageBody.id) {
+        // If the message does not have an ID, generate a new one
+        messageBody.id = generateProductId();
+      }
+
+      const product = {
+        id: messageBody.id,
+        title: messageBody.title,
+        author: messageBody.author,
+        price: messageBody.price,
+        count: messageBody.count,
+      };
+
+      await createProductInDynamoDB(product);
+    }
+
+    // Send an event to the SNS topic
+    const snsMessage = "Products have been created successfully.";
+    await sendEventToSNS(SNS_TOPIC_ARN, snsMessage);
+
+    return {
+      statusCode: 200,
+      body: "Processed all messages successfully",
+    };
+  } catch (error) {
+    console.error("Error processing messages:", error);
+    return {
+      statusCode: 500,
+      body: "Error processing messages",
+    };
+  }
+};
+
+// Function to create a product in the DynamoDB table
+const createProductInDynamoDB = async (product) => {
+  const params = {
+    TableName: PRODUCTS_TABLE,
+    Item: product,
+  };
+
+  await dynamo.put(params).promise();
+};
+
+// Function to generate a unique product ID
+const generateProductId = () => {
+  return (
+    Math.random().toString(36).substring(2, 15) +
+    Math.random().toString(36).substring(2, 15)
+  );
+};
+
+// Function to send an event to an SNS topic
+const sendEventToSNS = async (topicArn, message) => {
+  const params = {
+    TopicArn: topicArn,
+    Message: message,
+  };
+
+  await sns.publish(params).promise();
 };
 
 // OPTION WITH MOCKED DATA - WORKING!!!
