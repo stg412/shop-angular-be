@@ -1,0 +1,58 @@
+service: authorization-service
+frameworkVersion: "3"
+
+plugins:
+  - serverless-dotenv-plugin
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  region: us-east-1
+
+functions:
+  basicAuthorizer:
+    handler: handler.basicAuthorizer
+    environment:
+      YOUR_GITHUB_ACCOUNT_LOGIN: ${env:stg412}
+
+resources:
+  Resources:
+    MyAuthorizer:
+      Type: AWS::ApiGateway::Authorizer
+      Properties:
+        Name: MyCustomAuthorizer
+        Type: TOKEN
+        IdentitySource: method.request.header.Authorization
+        AuthorizerUri:
+          Fn::Sub:
+            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${basicAuthorizer.Arn}/invocations
+        AuthorizerResultTtlInSeconds: 300
+
+    MyAuthorizerInvokePermission:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName:
+          Fn::GetAtt:
+            - basicAuthorizer
+            - Arn
+        Action: lambda:InvokeFunction
+        Principal: apigateway.amazonaws.com
+
+    ImportMethodSettings:
+      Type: AWS::ApiGateway::MethodSettings
+      Properties:
+        ResourcePath:
+          Fn::Sub:
+            /import/*
+        HttpMethod: GET
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        AuthorizationType: CUSTOM
+        AuthorizerId:
+          Ref: MyAuthorizer
+
+custom:
+  authorizers:
+    basicAuthorizer:
+      type: request
+      name: MyCustomAuthorizer
