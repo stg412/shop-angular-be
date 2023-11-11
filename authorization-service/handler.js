@@ -1,3 +1,5 @@
+const { GITHUB_ACCOUNT_LOGIN, TEST_PASSWORD } = process.env;
+
 module.exports.basicAuthorizer= async (event) => {
   const authorizationToken = event.authorizationToken;
 
@@ -5,7 +7,7 @@ module.exports.basicAuthorizer= async (event) => {
     // Return a 401 Unauthorized status if the Authorization header is not provided
     return {
       statusCode: 401,
-      body: 'Unauthorized',
+      body: 'Unauthorized from handler',
     };
   }
 
@@ -16,9 +18,8 @@ module.exports.basicAuthorizer= async (event) => {
   // Parse the decoded credentials
   const [username, password] = decodedCreds.split(':');
 
-  // Retrieve environment variables
-  const expectedUsername = process.env.YOUR_GITHUB_ACCOUNT_LOGIN;
-  const expectedPassword = process.env.TEST_PASSWORD;
+  const expectedUsername = GITHUB_ACCOUNT_LOGIN;
+  const expectedPassword = TEST_PASSWORD;
 
   // Check if the provided credentials match the environment variables
   if (username === expectedUsername && password === expectedPassword) {
@@ -51,7 +52,7 @@ module.exports.basicAuthorizer= async (event) => {
         },
       ],
     },
-    body: 'Access Denied',
+    body: 'Access Denied from handler',
   };
 };
 
