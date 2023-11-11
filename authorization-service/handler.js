@@ -2,76 +2,39 @@ const { GITHUB_ACCOUNT_LOGIN, TEST_PASSWORD } = process.env;
 
 module.exports.basicAuthorizer= async (event) => {
   console.log('event :', event,  JSON.stringify(event));
-  const authorizationToken = event.authorizationToken;
+  const authHeader = event.headers.Authorization;
 
-  if (!authorizationToken) {
-    // Return a 401 Unauthorized status if the Authorization header is not provided
-    return {
-      statusCode: 401,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
-        "Access-Control-Allow-Headers" : "Content-Type",
-        "Access-Control-Allow-Methods": "OPTIONS,GET"
-      },
-      body: 'Unauthorized from handler',
-    };
+  if (!authHeader || event.type !== "REQUEST") {
+    return "Unauthorized";
   }
 
-  // Decode the Basic Authorization token
-  const encodedCreds = authorizationToken.split(' ')[1];
-  const decodedCreds = Buffer.from(encodedCreds, 'base64').toString('utf-8');
-
-  // Parse the decoded credentials
-  const [username, password] = decodedCreds.split(':');
-
-  const expectedUsername = GITHUB_ACCOUNT_LOGIN;
-  const expectedPassword = TEST_PASSWORD;
-
-  // Check if the provided credentials match the environment variables
-  if (username === expectedUsername && password === expectedPassword) {
-    // Return a 200 OK status if access is granted
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
-        "Access-Control-Allow-Headers" : "Content-Type",
-        "Access-Control-Allow-Methods": "OPTIONS,GET"
-      },
-      policyDocument: {
-        Version: '2012-10-17',
-        Statement: [
-          {
-            Action: 'execute-api:Invoke',
-            Effect: 'Allow',
-            Resource: event.methodArn,
-          },
-        ],
-      },
-    };
-  }
-
-  // Return a 403 Forbidden status with an explicit Deny effect
-  return {
-    statusCode: 403,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': true,
-      "Access-Control-Allow-Headers" : "Content-Type",
-      "Access-Control-Allow-Methods": "OPTIONS,GET"
-    },
+  const getPolicy = (principalId, effect) => ({
+    principalId,
     policyDocument: {
-      Version: '2012-10-17',
+      Version: "2012-10-17",
       Statement: [
         {
-          Action: 'execute-api:Invoke',
-          Effect: 'Deny',
-          Resource: event.methodArn,
+          Action: "execute-api:Invoke",
+          Effect: effect,
+          Resource: `arn:aws:execute-api:*:*:*`,
         },
       ],
     },
-    body: 'Access Denied from handler',
-  };
+  });
+
+  const authTokenEncoded = authHeader.split(" ")[1];
+  const authTokenDecoded = Buffer.from(authTokenEncoded, "base64").toString(
+    "ascii"
+  );
+  const username = authTokenDecoded.split(":")[0];
+  const password = authTokenDecoded.split(":")[1];
+  const expectedUsername = GITHUB_ACCOUNT_LOGIN;
+  const expectedPassword = TEST_PASSWORD;
+
+  if (username === expectedUsername && password === expectedPassword) {
+    return getPolicy(username, "Allow");
+  } else {
+    return getPolicy(username, "Deny");
+  }
 };
 
