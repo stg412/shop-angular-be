@@ -1,12 +1,19 @@
 const { GITHUB_ACCOUNT_LOGIN, TEST_PASSWORD } = process.env;
 
 module.exports.basicAuthorizer= async (event) => {
+  console.log('event :', event,  JSON.stringify(event));
   const authorizationToken = event.authorizationToken;
 
   if (!authorizationToken) {
     // Return a 401 Unauthorized status if the Authorization header is not provided
     return {
       statusCode: 401,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+        "Access-Control-Allow-Headers" : "Content-Type",
+        "Access-Control-Allow-Methods": "OPTIONS,GET"
+      },
       body: 'Unauthorized from handler',
     };
   }
@@ -26,6 +33,12 @@ module.exports.basicAuthorizer= async (event) => {
     // Return a 200 OK status if access is granted
     return {
       statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+        "Access-Control-Allow-Headers" : "Content-Type",
+        "Access-Control-Allow-Methods": "OPTIONS,GET"
+      },
       policyDocument: {
         Version: '2012-10-17',
         Statement: [
@@ -42,6 +55,12 @@ module.exports.basicAuthorizer= async (event) => {
   // Return a 403 Forbidden status with an explicit Deny effect
   return {
     statusCode: 403,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Credentials': true,
+      "Access-Control-Allow-Headers" : "Content-Type",
+      "Access-Control-Allow-Methods": "OPTIONS,GET"
+    },
     policyDocument: {
       Version: '2012-10-17',
       Statement: [
