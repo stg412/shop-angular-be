@@ -1,26 +1,26 @@
 const { GITHUB_ACCOUNT_LOGIN, TEST_PASSWORD } = process.env;
 
-module.exports.basicAuthorizer= async (event) => {
+const getPolicy = (principalId, effect) => ({
+  principalId,
+  policyDocument: {
+    Version: "2012-10-17",
+    Statement: [
+      {
+        Action: "execute-api:Invoke",
+        Effect: effect,
+        Resource: `arn:aws:execute-api:*:*:*`,
+      },
+    ],
+  },
+});
+
+module.exports.basicAuthorizer= async (event, context, callback) => {
   console.log('event :', event,  JSON.stringify(event));
   const authHeader = event.headers.Authorization;
 
   if (!authHeader || event.type !== "REQUEST") {
-    return "Unauthorized";
+    return callback('Unauthorized', { statusCode: 401 });
   }
-
-  const getPolicy = (principalId, effect) => ({
-    principalId,
-    policyDocument: {
-      Version: "2012-10-17",
-      Statement: [
-        {
-          Action: "execute-api:Invoke",
-          Effect: effect,
-          Resource: `arn:aws:execute-api:*:*:*`,
-        },
-      ],
-    },
-  });
 
   const authTokenEncoded = authHeader.split(" ")[1];
   const authTokenDecoded = Buffer.from(authTokenEncoded, "base64").toString(
@@ -32,9 +32,9 @@ module.exports.basicAuthorizer= async (event) => {
   const expectedPassword = TEST_PASSWORD;
 
   if (username === expectedUsername && password === expectedPassword) {
-    return getPolicy(username, "Allow");
+    return callback(null, getPolicy(username, "Allow"));
   } else {
-    return getPolicy(username, "Deny");
+    return callback(null, getPolicy(username, "Deny"));
   }
 };
 
